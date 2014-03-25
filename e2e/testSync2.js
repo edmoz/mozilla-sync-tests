@@ -12,8 +12,8 @@ var tabs = require("../../../lib/tabs");
 var utils = require("../../../lib/utils");
 var toolbars = require("../../../lib/toolbars");
 var places = require("../../../../lib/places");
+var sync = require("../../../lib/sync");
 
-const TEST_DATA = "about:accounts?action=signin";
 const USER = "test_user";
 const DOMAIN = "restmail.net"
 const PASSWORD = "password2014";
@@ -35,8 +35,7 @@ var teardownModule = function(aModule) {
 var testSyncEndToEnd2 = function() {
   
   // Open sign-in page
-  controller.open(TEST_DATA);
-  controller.waitForPageLoad();
+  sync.navigateToSignin(controller);  
 
   // Find and fill email field
   var email = findElement.XPath(controller.tabs.activeTab, "descendant-or-self::input[contains(concat(' ', normalize-space(@class), ' '), ' email ')]");

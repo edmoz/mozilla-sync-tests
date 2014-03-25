@@ -12,8 +12,8 @@ var tabs = require("../../../lib/tabs");
 var utils = require("../../../lib/utils");
 var toolbars = require("../../../lib/toolbars");
 var places = require("../../../../lib/places");
+var sync = require("../../../lib/sync");
 
-const TEST_DATA = "about:accounts?action=signup";
 const USER = "test_user";
 const DOMAIN = "restmail.net"
 const PASSWORD = "password2014";
@@ -29,35 +29,29 @@ var testUser = "";
 var setupModule = function(aModule) {
   aModule.controller = mozmill.getBrowserController();
   aModule.locationBar =  new toolbars.locationBar(aModule.controller);
+  aModule.signUpSite = new sync.SignUpSite(aModule.controller);
   testUser = USER + utils.appInfo.ID + utils.appInfo.version + utils.appInfo.appBuildID + "@" + DOMAIN;
 }
 
 var testSyncEndToEnd = function() {
 
   // Open signup page
-  controller.open(TEST_DATA);
-  controller.waitForPageLoad();
+  sync.navigateToSignup(controller);
   
   // Find and fill email field
-  var email = findElement.XPath(controller.tabs.activeTab, "descendant-or-self::input[contains(concat(' ', normalize-space(@class), ' '), ' email ')]");
-  email.waitThenClick();
-  type(email, testUser);
+  signUpSite.typeEmail(testUser);
 
   // Find and fill password field
-  var password = findElement.ID(controller.window.content.document, "password");
-  password.click();
-  type(password, PASSWORD);
+  signUpSite.typePassword(PASSWORD);
 
   // Find and select valid age
-  var age = findElement.ID(controller.window.content.document, "fxa-age-year");
-  age.select(2);
+  signUpSite.selectAge(2);
 
   // Find and click on button
-  var nextButton = findElement.XPath(controller.tabs.activeTab, "descendant-or-self::button");
-  nextButton.click();
+  signUpSite.clickNextButton();
   
   // Wait for e-mail
-  var xmlHttp = controller.tabs.activeTab.defaultView.XMLHttpRequest();
+  var xmlHttp = new controller.tabs.activeTab.defaultView.XMLHttpRequest;
   var response = "[]";
   
   controller.waitFor(function () { 
@@ -76,7 +70,8 @@ var testSyncEndToEnd = function() {
   var accountVerifiedHeader = findElement.ID(controller.window.content.document, "fxa-complete-sign-up-header");
   accountVerifiedHeader.waitForElement(100000, 1000);
   expect.ok(accountVerifiedHeader.exists(), "User is on complete sign up page");
-
+  
+ 
   // Open URI and wait until it has been finished loading
   var uri = utils.createURI(BOOKMARK_URL);
   controller.open(uri.spec);
@@ -101,6 +96,7 @@ var testSyncEndToEnd = function() {
   var bookmarkFolder = places.bookmarksService.bookmarksMenuFolder;
   var bookmarkExists = places.isBookmarkInFolder(uri, bookmarkFolder);
   expect.ok(bookmarkExists, "Bookmark was created in the bookmarks menu");
+
 }
 
 var type = function(aElement, aString) {
