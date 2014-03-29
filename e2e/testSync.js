@@ -30,7 +30,15 @@ var setupModule = function(aModule) {
   aModule.controller = mozmill.getBrowserController();
   aModule.locationBar =  new toolbars.locationBar(aModule.controller);
   aModule.signUpSite = new sync.SignUpSite(aModule.controller);
-  testUser = USER + utils.appInfo.ID + utils.appInfo.version + utils.appInfo.appBuildID + "@" + DOMAIN;
+  // testUser = USER + utils.appInfo.ID + utils.appInfo.version + "@" + DOMAIN;
+  testUser = "mozmill_test1@" + DOMAIN;
+}
+
+var teardownModule = function(aModule) {
+  // Delete restmail email
+  var xmlHttp = new controller.tabs.activeTab.defaultView.XMLHttpRequest;
+  xmlHttp.open( "DELETE", MAIL_SERVER + testUser, false );
+  xmlHttp.send( null );
 }
 
 var testSyncEndToEnd = function() {
@@ -49,23 +57,29 @@ var testSyncEndToEnd = function() {
 
   // Find and click on button
   signUpSite.clickNextButton();
-  
+
+  // Verify account create page
+  // controller.waitForPageLoad();
+  var accountConfirmedHeader = findElement.ID(controller.window.content.document, "fxa-confirm-header");
+  accountConfirmedHeader.waitForElement(100000, 1000);
+  expect.ok(accountConfirmedHeader.exists(), "Unverified account create confirmed");
+
   // Wait for e-mail
   var xmlHttp = new controller.tabs.activeTab.defaultView.XMLHttpRequest;
   var response = "[]";
-  
+  var verifyUrl = "";
+  controller.sleep(3000);
   controller.waitFor(function () { 
     xmlHttp.open( "GET", MAIL_SERVER + testUser, false );
     xmlHttp.send( null );
     response = xmlHttp.responseText;
+    var json = JSON.parse(response);
+    verifyUrl = json[0]['headers']['x-link'];
     return response != "[]";
-  }, "Waiting for an email", 100000, 1000);
-  
-  // Get url params from email
-  var match = regex.exec(response);
-  
+  }, "Waiting for an email", 3000, 1000);
+
   // Verify email address
-  controller.open(VERIFY_SERVICE + "?" + match[0]);
+  controller.open(verifyUrl);
   controller.waitForPageLoad();
   var accountVerifiedHeader = findElement.ID(controller.window.content.document, "fxa-complete-sign-up-header");
   accountVerifiedHeader.waitForElement(100000, 1000);
